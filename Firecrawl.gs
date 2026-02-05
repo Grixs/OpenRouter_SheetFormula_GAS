@@ -94,12 +94,29 @@ function firecrawl_status(job_id, response_field, password) {
       return 'CHYBA: job_id je povinný.';
     }
 
+    let resolvedJobId = String(job_id).trim();
+    if (resolvedJobId.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(resolvedJobId);
+        resolvedJobId =
+          (parsed && parsed.id) ||
+          (parsed && parsed.data && parsed.data.id) ||
+          resolvedJobId;
+      } catch (parseError) {
+        return 'CHYBA: Neplatný JSON vstup.';
+      }
+    }
+
+    if (!resolvedJobId || String(resolvedJobId).trim() === '' || resolvedJobId.startsWith('{')) {
+      return 'CHYBA: JSON neobsahuje id.';
+    }
+
     const apiKey = getFirecrawlApiKey(password);
     if (!apiKey) {
       return 'CHYBA: Firecrawl API klíč není nastaven. Použijte menu Firecrawl → Nastavit API klíč.';
     }
 
-    const response = callFirecrawlStatusAPI(apiKey, String(job_id));
+    const response = callFirecrawlStatusAPI(apiKey, String(resolvedJobId));
     return formatFirecrawlResponse('agent', response, response_field);
   } catch (error) {
     const errorMsg = `Neočekávaná chyba: ${error.message}`;
